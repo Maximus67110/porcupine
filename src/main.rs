@@ -1,8 +1,8 @@
 use std::env;
 use chrono::prelude::*;
 use clap::{App, Arg, ArgGroup};
-use porcupine::{BuiltinKeywords, PorcupineBuilder};
-use pv_recorder::PvRecorderBuilder;
+use porcupine::{BuiltinKeywords, Porcupine, PorcupineBuilder};
+use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -14,7 +14,7 @@ fn porcupine(
     audio_device_index: i32,
     keywords_or_paths: KeywordsOrPaths,
 ) {
-    let mut porcupine_builder = match keywords_or_paths {
+    let mut porcupine_builder: PorcupineBuilder = match keywords_or_paths {
         KeywordsOrPaths::Keywords(ref keywords) => {
             PorcupineBuilder::new_with_keywords(env::var("ACCESS_TOKEN").unwrap(), keywords)
         }
@@ -24,11 +24,11 @@ fn porcupine(
     };
     porcupine_builder.model_path("porcupine_params_fr.pv");
 
-    let porcupine = porcupine_builder
+    let porcupine: Porcupine = porcupine_builder
         .init()
         .expect("Failed to create Porcupine");
 
-    let recorder = PvRecorderBuilder::new(porcupine.frame_length() as i32)
+    let recorder: PvRecorder = PvRecorderBuilder::new(porcupine.frame_length() as i32)
         .device_index(audio_device_index)
         .init()
         .expect("Failed to initialize pvrecorder");
@@ -43,9 +43,9 @@ fn porcupine(
     println!("Listening for wake words...");
 
     while LISTENING.load(Ordering::SeqCst) {
-        let frame = recorder.read().expect("Failed to read audio frame");
+        let frame: Vec<i16> = recorder.read().expect("Failed to read audio frame");
 
-        let keyword_index = porcupine.process(&frame).unwrap();
+        let keyword_index: i32 = porcupine.process(&frame).unwrap();
         if keyword_index >= 0 {
             println!(
                 "[{}] Detected {}",
@@ -79,7 +79,7 @@ impl KeywordsOrPaths {
 }
 
 fn show_audio_devices() {
-    let audio_devices = PvRecorderBuilder::default().get_available_devices();
+    let audio_devices: Result<Vec<String>, PvRecorderError> = PvRecorderBuilder::default().get_available_devices();
     match audio_devices {
         Ok(audio_devices) => {
             for (idx, device) in audio_devices.iter().enumerate() {
