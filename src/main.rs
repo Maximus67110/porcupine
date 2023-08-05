@@ -1,8 +1,12 @@
-use std::{env, str::FromStr, sync::atomic::{AtomicBool, Ordering}};
+use std::{env, str::FromStr, sync::atomic::{AtomicBool, Ordering}, collections::HashMap};
 use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
 use dialoguer::{FuzzySelect, MultiSelect, theme::ColorfulTheme};
 use porcupine::{Porcupine, PorcupineBuilder};
 use dotenv::dotenv;
+use chrono::Local;
+
+mod utils;
+use utils::pv_keyword_paths;
 
 static LISTENING: AtomicBool = AtomicBool::new(false);
 
@@ -10,6 +14,16 @@ fn porcupine(
     audio_device_index: i32,
     keywords: Vec<Keywords>,
 ) {
+    let default_keyword_paths :HashMap<String, String> = pv_keyword_paths();
+    let keyword_paths: Vec<String> = keywords
+        .iter()
+        .map(|keyword| {
+            default_keyword_paths
+                .get(keyword.to_str())
+                .expect("Unable to find keyword file for specified keyword")
+        })
+        .cloned()
+        .collect::<Vec<_>>();
     let mut porcupine_builder: PorcupineBuilder = PorcupineBuilder::new_with_keyword_paths(env::var("ACCESS_TOKEN").unwrap(), &keyword_paths);
     porcupine_builder.model_path("porcupine_params_fr.pv");
 
@@ -36,7 +50,11 @@ fn porcupine(
 
         let keyword_index: i32 = porcupine.process(&frame).unwrap();
         if keyword_index >= 0 {
-            println!("{}", keyword_index);
+            println!(
+                "[{}] Detected {:?}",
+                Local::now().format("%F %T"),
+                keywords[keyword_index as usize]
+            );
         }
     }
 
