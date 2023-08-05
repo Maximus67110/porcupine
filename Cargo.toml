@@ -13,3 +13,4 @@ pv_porcupine = "2.2.1"
 pv_recorder = "1.2.1"
 dotenv = "0.15.0"
 isolang = { version = "2.3.0", features = ["local_names"] }
+tts_rust = "0.3.4"
