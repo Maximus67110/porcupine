@@ -4,9 +4,19 @@ use std::{
     path::PathBuf,
 };
 
+#[cfg(target_os = "macos")]
+pub fn pv_platform() -> String {
+    String::from("mac")
+}
+
 #[cfg(target_os = "windows")]
 pub fn pv_platform() -> String {
     String::from("windows")
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+pub fn pv_platform() -> String {
+    String::from("linux")
 }
 
 pub fn pv_keyword_paths() -> HashMap<String, String> {
