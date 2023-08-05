@@ -1,20 +1,22 @@
-use std::{env, str::FromStr, sync::atomic::{AtomicBool, Ordering}, collections::HashMap};
-use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
-use dialoguer::{FuzzySelect, MultiSelect, theme::ColorfulTheme};
-use porcupine::{Porcupine, PorcupineBuilder};
-use dotenv::dotenv;
 use chrono::Local;
+use dialoguer::{theme::ColorfulTheme, FuzzySelect, MultiSelect};
+use dotenv::dotenv;
+use porcupine::{Porcupine, PorcupineBuilder};
+use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
+use std::{
+    collections::HashMap,
+    env,
+    str::FromStr,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 mod utils;
 use utils::pv_keyword_paths;
 
 static LISTENING: AtomicBool = AtomicBool::new(false);
 
-fn porcupine(
-    audio_device_index: i32,
-    keywords: Vec<Keywords>,
-) {
-    let default_keyword_paths :HashMap<String, String> = pv_keyword_paths();
+fn porcupine(audio_device_index: i32, keywords: Vec<Keywords>) {
+    let default_keyword_paths: HashMap<String, String> = pv_keyword_paths();
     let keyword_paths: Vec<String> = keywords
         .iter()
         .map(|keyword| {
@@ -24,7 +26,8 @@ fn porcupine(
         })
         .cloned()
         .collect::<Vec<_>>();
-    let mut porcupine_builder: PorcupineBuilder = PorcupineBuilder::new_with_keyword_paths(env::var("ACCESS_TOKEN").unwrap(), &keyword_paths);
+    let mut porcupine_builder: PorcupineBuilder =
+        PorcupineBuilder::new_with_keyword_paths(env::var("ACCESS_TOKEN").unwrap(), &keyword_paths);
     porcupine_builder.model_path("porcupine_params_fr.pv");
 
     let porcupine: Porcupine = porcupine_builder
@@ -41,7 +44,7 @@ fn porcupine(
     ctrlc::set_handler(|| {
         LISTENING.store(false, Ordering::SeqCst);
     })
-        .expect("Unable to setup signal handler");
+    .expect("Unable to setup signal handler");
 
     println!("Listening for wake words...");
 
@@ -68,8 +71,8 @@ fn main() {
     let theme: ColorfulTheme = ColorfulTheme::default();
 
     let mut selection: FuzzySelect = FuzzySelect::with_theme(&theme);
-    let audio_devices: Result<Vec<String>, PvRecorderError> = PvRecorderBuilder::default()
-        .get_available_devices();
+    let audio_devices: Result<Vec<String>, PvRecorderError> =
+        PvRecorderBuilder::default().get_available_devices();
     match audio_devices {
         Ok(audio_devices) => {
             for (_usize, name) in audio_devices.iter().enumerate() {
@@ -78,20 +81,23 @@ fn main() {
         }
         Err(err) => panic!("Failed to get audio devices: {}", err),
     };
-    let audio_device_index: i32 = selection.with_prompt("Choose audio device input").interact().unwrap() as i32;
+    let audio_device_index: i32 = selection
+        .with_prompt("Choose audio device input")
+        .interact()
+        .unwrap() as i32;
 
     let mut selections: MultiSelect = MultiSelect::with_theme(&theme);
     selections.items(&Keywords::options());
-    let keywords_index: Vec<usize> = selections.with_prompt("Choose keywords").interact().unwrap();
+    let keywords_index: Vec<usize> = selections
+        .with_prompt("Choose keywords")
+        .interact()
+        .unwrap();
     let keywords: Vec<Keywords> = keywords_index
         .iter()
         .map(|&index| Keywords::from_str(Keywords::options()[index]).unwrap())
         .collect();
 
-    porcupine(
-        audio_device_index,
-        keywords,
-    );
+    porcupine(audio_device_index, keywords);
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -118,8 +124,6 @@ impl Keywords {
     }
 
     pub fn options() -> Vec<&'static str> {
-        vec![
-            "position",
-        ]
+        vec!["position"]
     }
 }

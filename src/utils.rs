@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fs::{read_dir, ReadDir}, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{read_dir, ReadDir},
+    path::PathBuf,
+};
 
 #[cfg(target_os = "windows")]
 pub fn pv_platform() -> String {
