@@ -70,18 +70,18 @@ fn main() {
     env::var("ACCESS_TOKEN").expect("ACCESS_TOKEN not found");
     let theme: ColorfulTheme = ColorfulTheme::default();
 
-    let mut selection: FuzzySelect = FuzzySelect::with_theme(&theme);
+    let mut audio_selection: FuzzySelect = FuzzySelect::with_theme(&theme);
     let audio_devices: Result<Vec<String>, PvRecorderError> =
         PvRecorderBuilder::default().get_available_devices();
     match audio_devices {
         Ok(audio_devices) => {
             for (_usize, name) in audio_devices.iter().enumerate() {
-                selection.item(name);
+                audio_selection.item(name);
             }
         }
         Err(err) => panic!("Failed to get audio devices: {}", err),
     };
-    let audio_device_index: i32 = selection
+    let audio_device_index: i32 = audio_selection
         .with_prompt("Choose audio device input")
         .interact()
         .unwrap() as i32;
