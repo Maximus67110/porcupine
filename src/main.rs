@@ -107,3 +107,14 @@ fn main() {
 
     porcupine(audio_device_index, &language, keywords);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_keywords_from_str() {
+        assert_eq!(Keywords::from_str("position"), Ok(Keywords::Position));
+        assert_eq!(Keywords::from_str("error"), Err(()));
+    }
+}
