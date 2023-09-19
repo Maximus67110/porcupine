@@ -109,3 +109,45 @@ pub fn language_list() -> HashMap<String, String> {
 
     languages
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pv_platform() {
+        #[cfg(target_os = "macos")]
+        assert_eq!(pv_platform(), "mac");
+
+        #[cfg(target_os = "windows")]
+        assert_eq!(pv_platform(), "windows");
+
+        #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+        assert_eq!(pv_platform(), "linux");
+    }
+
+    #[test]
+    fn test_pv_keyword_paths() {
+        let language: String = String::from("fr");
+        let keywords: HashMap<String, String> = pv_keyword_paths(&language);
+        assert!(keywords.len() > 0);
+    }
+
+    #[test]
+    fn test_pv_model_paths() {
+        let models: HashMap<String, String> = pv_model_paths();
+        assert!(models.len() > 0);
+    }
+
+    #[test]
+    fn test_audio_device_list() {
+        let audio_devices: Vec<String> = audio_device_list();
+        assert!(audio_devices.len() > 0);
+    }
+
+    #[test]
+    fn test_language_list() {
+        let languages: HashMap<String, String> = language_list();
+        assert!(languages.len() > 0);
+    }
+}
