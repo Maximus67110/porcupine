@@ -6,6 +6,8 @@ use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
 use std::{
     collections::HashMap,
     env,
+    fs::{read_dir, DirEntry, Metadata, ReadDir},
+    path::PathBuf,
     str::FromStr,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -15,8 +17,8 @@ use utils::pv_keyword_paths;
 
 static LISTENING: AtomicBool = AtomicBool::new(false);
 
-fn porcupine(audio_device_index: i32, keywords: Vec<Keywords>) {
-    let default_keyword_paths: HashMap<String, String> = pv_keyword_paths();
+fn porcupine(audio_device_index: i32, language: &String, keywords: Vec<Keywords>) {
+    let default_keyword_paths: HashMap<String, String> = pv_keyword_paths(language);
     let keyword_paths: Vec<String> = keywords
         .iter()
         .map(|keyword| {
@@ -28,7 +30,12 @@ fn porcupine(audio_device_index: i32, keywords: Vec<Keywords>) {
         .collect::<Vec<_>>();
     let mut porcupine_builder: PorcupineBuilder =
         PorcupineBuilder::new_with_keyword_paths(env::var("ACCESS_TOKEN").unwrap(), &keyword_paths);
-    porcupine_builder.model_path("porcupine_params_fr.pv");
+    match language.as_str() {
+        "fr" => {
+            porcupine_builder.model_path("./src/model/porcupine_params_fr.pv");
+        }
+        _ => {}
+    }
 
     let porcupine: Porcupine = porcupine_builder
         .init()
@@ -86,6 +93,27 @@ fn main() {
         .interact()
         .unwrap() as i32;
 
+    let mut languages: Vec<String> = Vec::new();
+    let dir: PathBuf = PathBuf::from("./src/keyword");
+    let dir_entries: ReadDir = read_dir(&dir)
+        .unwrap_or_else(|_| panic!("Can't find default keyword_files dir: {}", dir.display()));
+    for entry in dir_entries {
+        let entry: DirEntry = entry.unwrap();
+        let metadata: Metadata = entry.metadata().unwrap();
+        if metadata.is_dir() {
+            if let Some(entry_name) = entry.file_name().to_str() {
+                languages.push(entry_name.to_string());
+            }
+        }
+    }
+    let mut language_selection: FuzzySelect = FuzzySelect::with_theme(&theme);
+    let language_index: usize = language_selection
+        .with_prompt("Choose language")
+        .items(&languages)
+        .interact()
+        .unwrap();
+    let language: &String = &languages[language_index];
+
     let mut selections: MultiSelect = MultiSelect::with_theme(&theme);
     selections.items(&Keywords::options());
     let keywords_index: Vec<usize> = selections
@@ -97,7 +125,7 @@ fn main() {
         .map(|&index| Keywords::from_str(Keywords::options()[index]).unwrap())
         .collect();
 
-    porcupine(audio_device_index, keywords);
+    porcupine(audio_device_index, language, keywords);
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]

@@ -19,11 +19,11 @@ pub fn pv_platform() -> String {
     String::from("linux")
 }
 
-pub fn pv_keyword_paths() -> HashMap<String, String> {
+pub fn pv_keyword_paths(language: &String) -> HashMap<String, String> {
     let pv_platform: String = pv_platform();
-    let keyword_file_pattern: String = format!("_{pv_platform}.ppn");
+    let keyword_file_pattern: String = format!("_{language}_{pv_platform}.ppn");
 
-    let dir: PathBuf = PathBuf::from("./src/keyword");
+    let dir: PathBuf = PathBuf::from(format!("./src/keyword/{language}"));
 
     let mut keyword_paths: HashMap<String, String> = HashMap::new();
     let dir_entries: ReadDir = read_dir(&dir)
