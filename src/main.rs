@@ -1,6 +1,7 @@
 use chrono::Local;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, MultiSelect};
 use dotenv::dotenv;
+use isolang::Language;
 use porcupine::{Porcupine, PorcupineBuilder};
 use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
 use std::{
@@ -100,7 +101,10 @@ fn main() {
         let metadata: Metadata = entry.metadata().unwrap();
         if metadata.is_dir() {
             if let Some(entry_name) = entry.file_name().to_str() {
-                languages.push(entry_name.to_string());
+                if let Some(language_name) = Language::from_639_1(entry_name).unwrap().to_autonym()
+                {
+                    languages.push(language_name.to_string());
+                }
             }
         }
     }
@@ -110,7 +114,11 @@ fn main() {
         .items(&languages)
         .interact()
         .unwrap();
-    let language: &String = &languages[language_index];
+    let language = Language::from_autonym(&languages[language_index])
+        .unwrap()
+        .to_639_1()
+        .unwrap()
+        .to_string();
 
     let mut selections: MultiSelect = MultiSelect::with_theme(&theme);
     selections.items(&Keywords::options());
@@ -123,7 +131,7 @@ fn main() {
         .map(|&index| Keywords::from_str(Keywords::options()[index]).unwrap())
         .collect();
 
-    porcupine(audio_device_index, language, keywords);
+    porcupine(audio_device_index, &language, keywords);
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
