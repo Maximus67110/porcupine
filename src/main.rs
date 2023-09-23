@@ -13,7 +13,7 @@ use std::{
 };
 
 mod utils;
-use utils::pv_keyword_paths;
+use utils::{pv_keyword_paths, pv_model_paths};
 
 static LISTENING: AtomicBool = AtomicBool::new(false);
 
@@ -30,11 +30,9 @@ fn porcupine(audio_device_index: i32, language: &String, keywords: Vec<Keywords>
         .collect::<Vec<_>>();
     let mut porcupine_builder: PorcupineBuilder =
         PorcupineBuilder::new_with_keyword_paths(env::var("ACCESS_TOKEN").unwrap(), &keyword_paths);
-    match language.as_str() {
-        "fr" => {
-            porcupine_builder.model_path("./src/model/porcupine_params_fr.pv");
-        }
-        _ => {}
+    let default_model_paths: HashMap<String, String> = pv_model_paths();
+    if let Some(model_path) = default_model_paths.get(language) {
+        porcupine_builder.model_path(model_path);
     }
 
     let porcupine: Porcupine = porcupine_builder

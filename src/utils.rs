@@ -47,3 +47,26 @@ pub fn pv_keyword_paths(language: &String) -> HashMap<String, String> {
 
     keyword_paths
 }
+
+pub fn pv_model_paths() -> HashMap<String, String> {
+    let dir: PathBuf = PathBuf::from("./src/model");
+
+    let mut model_paths: HashMap<String, String> = HashMap::new();
+    let dir_entries: ReadDir = read_dir(&dir)
+        .unwrap_or_else(|_| panic!("Can't find default model_files dir: {}", dir.display()));
+
+    for entry in dir_entries.flatten() {
+        let path: PathBuf = entry.path();
+        let keyword_string: String = entry.file_name().into_string().unwrap();
+        if let Some(language) = keyword_string.split('_').last() {
+            if let Some(language) = language.split('.').next() {
+                model_paths.insert(
+                    language.to_string(),
+                    path.into_os_string().into_string().unwrap(),
+                );
+            }
+        }
+    }
+
+    model_paths
+}
