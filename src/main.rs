@@ -9,6 +9,7 @@ use std::{
     str::FromStr,
     sync::atomic::{AtomicBool, Ordering},
 };
+use tts_rust::{languages::Languages, tts::GTTSClient};
 
 mod utils;
 use utils::{audio_device_list, language_list, pv_keyword_paths, pv_model_paths};
@@ -48,6 +49,11 @@ fn porcupine(audio_device_index: i32, language: &String, keywords: Vec<Keywords>
         LISTENING.store(false, Ordering::SeqCst);
     })
     .expect("Unable to setup signal handler");
+    let narrator: GTTSClient = GTTSClient {
+        volume: 1.0,
+        language: Languages::French,
+        tld: "com",
+    };
 
     println!("Listening for wake words...");
 
@@ -59,8 +65,11 @@ fn porcupine(audio_device_index: i32, language: &String, keywords: Vec<Keywords>
             println!(
                 "[{}] Detected {:?}",
                 Local::now().format("%F %T"),
-                keywords[keyword_index as usize]
+                keywords[keyword_index as usize].to_str()
             );
+            narrator
+                .speak(keywords[keyword_index as usize].to_str())
+                .unwrap();
         }
     }
 
