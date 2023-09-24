@@ -1,6 +1,8 @@
+use isolang::Language;
+use pv_recorder::{PvRecorderBuilder, PvRecorderError};
 use std::{
     collections::HashMap,
-    fs::{read_dir, ReadDir},
+    fs::{read_dir, DirEntry, Metadata, ReadDir},
     path::PathBuf,
 };
 
@@ -69,4 +71,39 @@ pub fn pv_model_paths() -> HashMap<String, String> {
     }
 
     model_paths
+}
+
+pub fn audio_device_list() -> Vec<String> {
+    let mut audio_device_list: Vec<String> = Vec::new();
+    let audio_devices: Result<Vec<String>, PvRecorderError> =
+        PvRecorderBuilder::default().get_available_devices();
+    match audio_devices {
+        Ok(audio_devices) => {
+            for (_usize, name) in audio_devices.iter().enumerate() {
+                audio_device_list.push(name.to_string());
+            }
+        }
+        Err(err) => panic!("Failed to get audio devices: {}", err),
+    };
+    audio_device_list
+}
+
+pub fn language_list() -> HashMap<String, String> {
+    let mut languages: HashMap<String, String> = HashMap::new();
+    let dir: PathBuf = PathBuf::from("./src/keyword");
+    let dir_entries: ReadDir = read_dir(&dir)
+        .unwrap_or_else(|_| panic!("Can't find default keyword_files dir: {}", dir.display()));
+    for entry in dir_entries {
+        let entry: DirEntry = entry.unwrap();
+        let metadata: Metadata = entry.metadata().unwrap();
+        if metadata.is_dir() {
+            if let Some(entry_name) = entry.file_name().to_str() {
+                if let Some(language_name) = Language::from_639_1(entry_name).unwrap().to_autonym()
+                {
+                    languages.insert(language_name.to_string(), entry_name.to_string());
+                }
+            }
+        }
+    }
+    languages
 }

@@ -1,20 +1,17 @@
 use chrono::Local;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, MultiSelect};
 use dotenv::dotenv;
-use isolang::Language;
 use porcupine::{Porcupine, PorcupineBuilder};
-use pv_recorder::{PvRecorder, PvRecorderBuilder, PvRecorderError};
+use pv_recorder::{PvRecorder, PvRecorderBuilder};
 use std::{
     collections::HashMap,
     env,
-    fs::{read_dir, DirEntry, Metadata, ReadDir},
-    path::PathBuf,
     str::FromStr,
     sync::atomic::{AtomicBool, Ordering},
 };
 
 mod utils;
-use utils::{pv_keyword_paths, pv_model_paths};
+use utils::{audio_device_list, language_list, pv_keyword_paths, pv_model_paths};
 
 static LISTENING: AtomicBool = AtomicBool::new(false);
 
@@ -76,54 +73,28 @@ fn main() {
     env::var("ACCESS_TOKEN").expect("ACCESS_TOKEN not found");
     let theme: ColorfulTheme = ColorfulTheme::default();
 
+    let audio_devices: Vec<String> = audio_device_list();
     let mut audio_selection: FuzzySelect = FuzzySelect::with_theme(&theme);
-    let audio_devices: Result<Vec<String>, PvRecorderError> =
-        PvRecorderBuilder::default().get_available_devices();
-    match audio_devices {
-        Ok(audio_devices) => {
-            for (_usize, name) in audio_devices.iter().enumerate() {
-                audio_selection.item(name);
-            }
-        }
-        Err(err) => panic!("Failed to get audio devices: {}", err),
-    };
     let audio_device_index: i32 = audio_selection
         .with_prompt("Choose audio device input")
+        .items(&audio_devices)
         .interact()
         .unwrap() as i32;
 
-    let mut languages: Vec<String> = Vec::new();
-    let dir: PathBuf = PathBuf::from("./src/keyword");
-    let dir_entries: ReadDir = read_dir(&dir)
-        .unwrap_or_else(|_| panic!("Can't find default keyword_files dir: {}", dir.display()));
-    for entry in dir_entries {
-        let entry: DirEntry = entry.unwrap();
-        let metadata: Metadata = entry.metadata().unwrap();
-        if metadata.is_dir() {
-            if let Some(entry_name) = entry.file_name().to_str() {
-                if let Some(language_name) = Language::from_639_1(entry_name).unwrap().to_autonym()
-                {
-                    languages.push(language_name.to_string());
-                }
-            }
-        }
-    }
+    let languages: HashMap<String, String> = language_list();
+    let language_keys: Vec<String> = languages.keys().map(|s| s.to_string()).collect();
     let mut language_selection: FuzzySelect = FuzzySelect::with_theme(&theme);
     let language_index: usize = language_selection
         .with_prompt("Choose language")
-        .items(&languages)
+        .items(&language_keys)
         .interact()
         .unwrap();
-    let language = Language::from_autonym(&languages[language_index])
-        .unwrap()
-        .to_639_1()
-        .unwrap()
-        .to_string();
+    let language: String = languages.values().nth(language_index).unwrap().to_string();
 
     let mut selections: MultiSelect = MultiSelect::with_theme(&theme);
-    selections.items(&Keywords::options());
     let keywords_index: Vec<usize> = selections
         .with_prompt("Choose keywords")
+        .items(&Keywords::options())
         .interact()
         .unwrap();
     let keywords: Vec<Keywords> = keywords_index
