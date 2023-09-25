@@ -27,3 +27,28 @@ impl Keywords {
         vec!["position"]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_str_valid_keyword() {
+        assert_eq!(Keywords::from_str("position"), Ok(Keywords::Position));
+    }
+
+    #[test]
+    fn test_from_str_invalid_keyword() {
+        assert_eq!(Keywords::from_str("invalid"), Err(()));
+    }
+
+    #[test]
+    fn test_to_str() {
+        assert_eq!(Keywords::Position.to_str(), "position");
+    }
+
+    #[test]
+    fn test_options() {
+        assert_eq!(Keywords::options(), vec!["position"]);
+    }
+}
