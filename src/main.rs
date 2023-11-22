@@ -77,8 +77,7 @@ fn main() {
     let theme: ColorfulTheme = ColorfulTheme::default();
 
     let audio_devices: Vec<String> = audio_device_list();
-    let mut audio_selection: FuzzySelect = FuzzySelect::with_theme(&theme);
-    let audio_device_index: i32 = audio_selection
+    let audio_device_index: i32 = FuzzySelect::with_theme(&theme)
         .with_prompt("Choose audio device input")
         .items(&audio_devices)
         .interact()
@@ -86,16 +85,14 @@ fn main() {
 
     let languages: HashMap<String, String> = language_list();
     let language_keys: Vec<String> = languages.keys().map(|s| s.to_string()).collect();
-    let mut language_selection: FuzzySelect = FuzzySelect::with_theme(&theme);
-    let language_index: usize = language_selection
+    let language_index: usize = FuzzySelect::with_theme(&theme)
         .with_prompt("Choose language")
         .items(&language_keys)
         .interact()
         .unwrap();
     let language: String = languages.values().nth(language_index).unwrap().to_string();
 
-    let mut selections: MultiSelect = MultiSelect::with_theme(&theme);
-    let keywords_index: Vec<usize> = selections
+    let keywords_index: Vec<usize> = MultiSelect::with_theme(&theme)
         .with_prompt("Choose keywords")
         .items(&Keywords::options())
         .interact()
