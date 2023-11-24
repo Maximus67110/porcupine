@@ -1,20 +1,21 @@
 use chrono::Local;
-use dialoguer::{theme::ColorfulTheme, FuzzySelect, MultiSelect};
 use dotenv::dotenv;
 use porcupine::{Porcupine, PorcupineBuilder};
 use pv_recorder::{PvRecorder, PvRecorderBuilder};
 use std::{
     collections::HashMap,
     env,
-    str::FromStr,
     sync::atomic::{AtomicBool, Ordering},
 };
 
 mod utils;
-use utils::{audio_device_list, language_list, pv_keyword_paths, pv_model_paths};
+use utils::{pv_keyword_paths, pv_model_paths};
 
 mod keywords;
 use keywords::Keywords;
+
+mod dialoguer;
+use crate::dialoguer::{audio_select, keywords_select, language_select};
 
 static LISTENING: AtomicBool = AtomicBool::new(false);
 
@@ -74,33 +75,10 @@ fn porcupine(audio_device_index: i32, language: &String, keywords: Vec<Keywords>
 fn main() {
     dotenv().ok();
     env::var("ACCESS_TOKEN").expect("ACCESS_TOKEN not found");
-    let theme: ColorfulTheme = ColorfulTheme::default();
 
-    let audio_devices: Vec<String> = audio_device_list();
-    let audio_device_index: i32 = FuzzySelect::with_theme(&theme)
-        .with_prompt("Choose audio device input")
-        .items(&audio_devices)
-        .interact()
-        .unwrap() as i32;
-
-    let languages: HashMap<String, String> = language_list();
-    let language_keys: Vec<String> = languages.keys().map(|s| s.to_string()).collect();
-    let language_index: usize = FuzzySelect::with_theme(&theme)
-        .with_prompt("Choose language")
-        .items(&language_keys)
-        .interact()
-        .unwrap();
-    let language: String = languages.values().nth(language_index).unwrap().to_string();
-
-    let keywords_index: Vec<usize> = MultiSelect::with_theme(&theme)
-        .with_prompt("Choose keywords")
-        .items(&Keywords::options())
-        .interact()
-        .unwrap();
-    let keywords: Vec<Keywords> = keywords_index
-        .iter()
-        .map(|&index| Keywords::from_str(Keywords::options()[index]).unwrap())
-        .collect();
+    let audio_device_index: i32 = audio_select();
+    let language: String = language_select();
+    let keywords: Vec<Keywords> = keywords_select();
 
     porcupine(audio_device_index, &language, keywords);
 }
